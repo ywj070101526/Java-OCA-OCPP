@@ -71,4 +71,7 @@ public interface CommunicatorEvents {
 
   /** A connection was established. */
   void onConnected();
+
+  /** Return the corresponding message action. */
+  String getAction(String id);
 }

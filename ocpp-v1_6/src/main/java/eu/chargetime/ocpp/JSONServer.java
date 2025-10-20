@@ -53,6 +53,7 @@ public class JSONServer implements IServerAPI {
   private final Server server;
   private final FeatureRepository featureRepository;
   private JSONConfiguration jsonConfiguration;
+  private ITransportListener transportListener;
 
   /**
    * The core feature profile is required as a minimum. The constructor creates WS-ready server.
@@ -113,6 +114,11 @@ public class JSONServer implements IServerAPI {
    */
   public JSONServer(ServerCoreProfile coreProfile, WssFactoryBuilder wssFactoryBuilder) {
     this(coreProfile, wssFactoryBuilder, JSONConfiguration.get());
+  }
+
+  public void setTransportListener(ITransportListener transportListener) {
+    this.transportListener = transportListener;
+    this.listener.setTransportListener(transportListener);
   }
 
   // To ensure the exposed API is backward compatible

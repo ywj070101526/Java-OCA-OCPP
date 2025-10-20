@@ -108,7 +108,7 @@
               <executions>
                 <execution>
                   <id>attach-sources</id>
-                    <phase>verify</phase>
+                    <phase>deploy</phase>
                   <goals>
                     <goal>jar-no-fork</goal>
                   </goals>
@@ -127,6 +127,9 @@
                   </goals>
                 </execution>
               </executions>
+                <configuration>
+                    <doclint>none</doclint>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -135,7 +138,7 @@
                 <executions>
                     <execution>
                         <id>sign-artifacts</id>
-                        <phase>verify</phase>
+                        <phase>deploy</phase>
                         <goals>
                             <goal>sign</goal>
                         </goals>

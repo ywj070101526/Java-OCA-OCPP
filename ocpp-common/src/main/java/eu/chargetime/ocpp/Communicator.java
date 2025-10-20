@@ -50,12 +50,21 @@ public abstract class Communicator {
   private CommunicatorEvents events;
   private boolean failedFlag;
 
+  private ITransportListener transportListener;
+  private SessionInformation sessionInformation;
+
+  public void setTransportListener(SessionInformation sessionInformation, ITransportListener transportListener) {
+    this.sessionInformation = sessionInformation;
+    this.transportListener = transportListener;
+  }
+
   /**
    * Convert a formatted string into a {@link Request}/{@link Confirmation}. This is useful for call
    * results, where the confirmation type isn't given.
    *
    * @param payload the raw formatted payload.
    * @param type the expected return type.
+   * @param <T> the type of the object to be returned, matching the {@code type} parameter
    * @return the unpacked payload.
    * @throws Exception error occurred while converting.
    */
@@ -93,6 +102,7 @@ public abstract class Communicator {
    * Create a call error envelope to transmit.
    *
    * @param uniqueId the id the receiver expects.
+   * @param action action name of the feature (may be null).
    * @param errorCode an OCPP error code.
    * @param errorDescription an associated error description.
    * @return a fully packed message ready to send.
@@ -165,12 +175,14 @@ public abstract class Communicator {
   public synchronized void sendCall(String uniqueId, String action, Request request) {
     Object call = makeCall(uniqueId, action, packPayload(request));
 
+    String message = "";
     if (call != null) {
       if (call instanceof SOAPMessage) {
-        logger.trace("Send a message: {}", SugarUtil.soapMessageToString((SOAPMessage) call));
+        message = SugarUtil.soapMessageToString((SOAPMessage) call);
       } else {
-        logger.trace("Send a message: {}", call);
+        message = call.toString();
       }
+      logger.trace("Send a message: {}", message);
     }
 
     try {
@@ -193,6 +205,9 @@ public abstract class Communicator {
         processTransactionQueue();
       } else {
         radio.send(call);
+        if (transportListener != null) {
+          transportListener.rawMessageSent(sessionInformation, action, message);
+        }
       }
     } catch (NotConnectedException ex) {
       logger.warn("sendCall() failed: not connected");
@@ -212,11 +227,20 @@ public abstract class Communicator {
    * Send a {@link Confirmation} reply to a {@link Request}.
    *
    * @param uniqueId the id the receiver expects.
+   * @param action action name of the feature (may be null).
    * @param confirmation the outgoing {@link Confirmation}
    */
   public void sendCallResult(String uniqueId, String action, Confirmation confirmation) {
     try {
-      radio.send(makeCallResult(uniqueId, action, packPayload(confirmation)));
+      if (action == null) {
+        action = events.getAction(uniqueId);
+      }
+      Object callResult = makeCallResult(uniqueId, action, packPayload(confirmation));
+      radio.send(callResult);
+
+      if (transportListener != null) {
+        transportListener.rawMessageSent(sessionInformation, action, callResult.toString());
+      }
 
       ConfirmationCompletedHandler completedHandler = confirmation.getCompletedHandler();
 
@@ -245,6 +269,7 @@ public abstract class Communicator {
    * Send an error. If offline, the message is thrown away.
    *
    * @param uniqueId the id the receiver expects a response to.
+   * @param action action name of the feature (may be null).
    * @param errorCode an OCPP error Code
    * @param errorDescription a associated error description.
    */
@@ -257,7 +282,15 @@ public abstract class Communicator {
         errorCode,
         errorDescription);
     try {
-      radio.send(makeCallError(uniqueId, action, errorCode, errorDescription));
+      if (action == null) {
+        action = events.getAction(uniqueId);
+      }
+      Object callError = makeCallError(uniqueId, action, errorCode, errorDescription);
+      radio.send(callError);
+      if (transportListener != null) {
+        transportListener.rawMessageSent(sessionInformation, action, callError.toString());
+      }
+
     } catch (NotConnectedException ex) {
       logger.warn("sendCallError() failed", ex);
       events.onError(
@@ -306,6 +339,7 @@ public abstract class Communicator {
           logger.trace("Receive a message: {}", message);
         }
       }
+      String action = events.getAction(message.getId());
       if (message instanceof CallResultMessage) {
         events.onCallResult(message.getId(), message.getAction(), message.getPayload());
       } else if (message instanceof CallErrorMessage) {
@@ -315,8 +349,14 @@ public abstract class Communicator {
             call.getId(), call.getErrorCode(), call.getErrorDescription(), call.getRawPayload());
       } else if (message instanceof CallMessage) {
         CallMessage call = (CallMessage) message;
+        action = call.getAction();
         events.onCall(call.getId(), call.getAction(), call.getPayload());
       }
+
+      if (transportListener != null) {
+        transportListener.rawMessageReceived(sessionInformation, action, input.toString());
+      }
+
     }
 
     @Override

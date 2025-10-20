@@ -29,13 +29,14 @@ import eu.chargetime.ocpp.feature.Feature;
 import eu.chargetime.ocpp.model.Confirmation;
 import eu.chargetime.ocpp.model.Request;
 import eu.chargetime.ocpp.model.SessionInformation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Handles basic server logic: Holds a list of supported features. Keeps track of outgoing requests.
@@ -158,6 +159,11 @@ public class Server {
 
                   @Override
                   public void handleConnectionOpened() {}
+
+                  @Override
+                  public String getAction(String uniqueId) {
+                    return promiseRepository.getAction(uniqueId);
+                  }
                 });
 
             sessions.put(session.getSessionId(), session);
@@ -195,6 +201,7 @@ public class Server {
    * @throws UnsupportedFeatureException Thrown if the feature isn't among the list of supported
    *     featured.
    * @throws OccurenceConstraintException Thrown if the request isn't valid.
+   * @throws NotConnectedException
    */
   public CompletableFuture<Confirmation> send(UUID sessionIndex, Request request)
       throws UnsupportedFeatureException, OccurenceConstraintException, NotConnectedException {
@@ -217,8 +224,9 @@ public class Server {
     }
 
     String id = session.storeRequest(request);
-    CompletableFuture<Confirmation> promise = promiseRepository.createPromise(id);
-    session.sendRequest(featureOptional.get().getAction(), request, id);
+    String action = featureOptional.get().getAction();
+    CompletableFuture<Confirmation> promise = promiseRepository.createPromise(id, action);
+    session.sendRequest(action, request, id);
     return promise;
   }
 

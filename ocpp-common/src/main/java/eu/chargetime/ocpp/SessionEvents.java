@@ -73,4 +73,7 @@ public interface SessionEvents {
 
   /** Handle a opened connection. */
   void handleConnectionOpened();
+
+  /** Return the corresponding message action. */
+  String getAction(String uniqueId);
 }

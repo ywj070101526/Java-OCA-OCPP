@@ -148,6 +148,11 @@ public class TimeoutSessionDecorator implements ISession {
         eventHandler.handleConnectionOpened();
         startTimer();
       }
+
+      @Override
+      public String getAction(String uniqueId) {
+        return eventHandler.getAction(uniqueId);
+      }
     };
   }
 }

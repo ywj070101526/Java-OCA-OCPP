@@ -29,11 +29,12 @@ SOFTWARE.
 import eu.chargetime.ocpp.feature.Feature;
 import eu.chargetime.ocpp.model.Confirmation;
 import eu.chargetime.ocpp.model.Request;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Handles basic client logic: Holds a list of supported features. Keeps track of outgoing request.
@@ -124,6 +125,11 @@ public class Client {
           public void handleConnectionOpened() {
             if (events != null) events.connectionOpened();
           }
+
+            @Override
+            public String getAction(String uniqueId) {
+                return promiseRepository.getAction(uniqueId);
+            }
         });
   }
 
@@ -159,9 +165,9 @@ public class Client {
     }
 
     String id = session.storeRequest(request);
-    CompletableFuture<Confirmation> promise = promiseRepository.createPromise(id);
-
-    session.sendRequest(featureOptional.get().getAction(), request, id);
+      String action = featureOptional.get().getAction();
+      CompletableFuture<Confirmation> promise = promiseRepository.createPromise(id, action);
+    session.sendRequest(action, request, id);
     return promise;
   }
 

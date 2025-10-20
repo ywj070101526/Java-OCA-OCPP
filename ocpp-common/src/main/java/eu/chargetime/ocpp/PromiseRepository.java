@@ -35,20 +35,25 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PromiseRepository implements IPromiseRepository {
 
   private Map<String, CompletableFuture<Confirmation>> promises;
+  /** key: uniqueId, value: action */
+  private Map<String, String> actionMap;
 
   public PromiseRepository() {
     this.promises = new ConcurrentHashMap<>();
+    this.actionMap = new ConcurrentHashMap<>();
   }
 
   /**
    * Creates call back {@link CompletableFuture} for later use
    *
    * @param uniqueId identification for the {@link Request}
+   * @param action action for the msg
    * @return call back {@link CompletableFuture}
    */
-  public CompletableFuture<Confirmation> createPromise(String uniqueId) {
+  public CompletableFuture<Confirmation> createPromise(String uniqueId, String action) {
     CompletableFuture<Confirmation> promise = new CompletableFuture<>();
     promises.put(uniqueId, promise);
+    actionMap.put(uniqueId, action);
     return promise;
   }
 
@@ -69,5 +74,16 @@ public class PromiseRepository implements IPromiseRepository {
    */
   public void removePromise(String uniqueId) {
     promises.remove(uniqueId);
+    actionMap.remove(uniqueId);
+  }
+
+  /**
+   * get stored CompletableFuture's action
+   *
+   * @param uniqueId
+   * @return
+   */
+  public String getAction(String uniqueId) {
+    return actionMap.get(uniqueId);
   }
 }

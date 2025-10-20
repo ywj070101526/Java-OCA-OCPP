@@ -64,6 +64,7 @@ public class WebSocketListener implements Listener {
   private final Map<WebSocket, WebSocketReceiver> sockets;
   private volatile boolean closed = true;
   private boolean handleRequestAsync;
+  private ITransportListener transportListener;
 
   public WebSocketListener(
       ISessionFactory sessionFactory, JSONConfiguration configuration, Draft... drafts) {
@@ -75,6 +76,10 @@ public class WebSocketListener implements Listener {
 
   public WebSocketListener(ISessionFactory sessionFactory, Draft... drafts) {
     this(sessionFactory, JSONConfiguration.get(), drafts);
+  }
+
+  public void setTransportListener(ITransportListener transportListener) {
+    this.transportListener = transportListener;
   }
 
   @Override
@@ -114,6 +119,10 @@ public class WebSocketListener implements Listener {
                         webSocket.send(message);
                       }
                     });
+            // new SessionInformation.Builder()
+            //                         .Identifier(webSocket.getResourceDescriptor())
+            //                         .build(),
+            //                         transportListener
 
             sockets.put(webSocket, receiver);
 
@@ -131,8 +140,10 @@ public class WebSocketListener implements Listener {
                     .ProxiedAddress(proxiedAddress)
                     .build();
 
-            handler.newSession(
-                sessionFactory.createSession(new JSONCommunicator(receiver)), information);
+            JSONCommunicator communicator = new JSONCommunicator(receiver);
+            ISession session = sessionFactory.createSession(communicator);
+            communicator.setTransportListener(information, transportListener);
+            handler.newSession(session, information);
           }
 
           @Override

@@ -178,10 +178,13 @@ public class Session implements ISession {
     public void onCallResult(String id, String action, Object payload) {
       try {
         Optional<Class<? extends Confirmation>> confirmationTypeOptional = getConfirmationType(id);
-
         if (confirmationTypeOptional.isPresent()) {
           Confirmation confirmation =
               communicator.unpackPayload(payload, confirmationTypeOptional.get());
+          // Optional<Feature> feature = getFeatureRepository().findFeature(confirmation);
+          // if (feature.isPresent()) {
+          //   featureAction = feature.get().getAction();
+          // }
           if (confirmation.validate()) {
             events.handleConfirmation(id, confirmation);
           } else {
@@ -249,6 +252,11 @@ public class Session implements ISession {
     @Override
     public void onConnected() {
       events.handleConnectionOpened();
+    }
+
+    @Override
+    public String getAction(String id) {
+      return events.getAction(id);
     }
 
     private boolean isLegacyRPC() {

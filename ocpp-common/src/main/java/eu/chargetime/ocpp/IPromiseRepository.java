@@ -30,9 +30,11 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public interface IPromiseRepository {
-  CompletableFuture<Confirmation> createPromise(String uniqueId);
+  CompletableFuture<Confirmation> createPromise(String uniqueId, String action);
 
   Optional<CompletableFuture<Confirmation>> getPromise(String uniqueId);
 
   void removePromise(String uniqueId);
+
+  String getAction(String uniqueId);
 }
