@@ -30,8 +30,12 @@ SOFTWARE.
 import eu.chargetime.ocpp.feature.Feature;
 import eu.chargetime.ocpp.model.*;
 import java.util.ArrayDeque;
+
+import eu.chargetime.ocpp.utilities.SugarUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.soap.SOAPMessage;
 
 /**
  * Abstract class. Handles basic communication: Pack and send messages. Receive and unpack messages.
@@ -47,6 +51,14 @@ public abstract class Communicator {
   protected Radio radio;
   private CommunicatorEvents events;
   private boolean failedFlag;
+
+  private ITransportListener transportListener;
+  private SessionInformation sessionInformation;
+
+  public void setTransportListener(SessionInformation sessionInformation, ITransportListener transportListener) {
+    this.sessionInformation = sessionInformation;
+    this.transportListener = transportListener;
+  }
 
   /**
    * Convert a formatted string into a {@link Request}/{@link Confirmation}. This is useful for call
@@ -187,6 +199,16 @@ public abstract class Communicator {
   public synchronized void sendCall(String uniqueId, String action, Request request) {
     Object call = makeCall(uniqueId, action, packPayload(request));
 
+    String message = "";
+    if (call != null) {
+      if (call instanceof SOAPMessage) {
+        message = SugarUtil.soapMessageToString((SOAPMessage) call);
+      } else {
+        message = call.toString();
+      }
+      logger.trace("Send a message: {}", message);
+    }
+
     try {
       if (radio.isClosed()) {
         if (request.transactionRelated() && transactionQueue != null) {
@@ -207,6 +229,9 @@ public abstract class Communicator {
         processTransactionQueue();
       } else {
         radio.send(call);
+        if (transportListener != null) {
+          transportListener.rawMessageSent(sessionInformation, action, message);
+        }
       }
     } catch (NotConnectedException ex) {
       logger.warn("sendCall() failed: not connected");
@@ -231,7 +256,16 @@ public abstract class Communicator {
    */
   public void sendCallResult(String uniqueId, String action, Confirmation confirmation) {
     try {
-      radio.send(makeCallResult(uniqueId, action, packPayload(confirmation)));
+      // radio.send(makeCallResult(uniqueId, action, packPayload(confirmation)));
+      if (action == null) {
+        action = events.getAction(uniqueId);
+      }
+      Object callResult = makeCallResult(uniqueId, action, packPayload(confirmation));
+      radio.send(callResult);
+
+      if (transportListener != null) {
+        transportListener.rawMessageSent(sessionInformation, action, callResult.toString());
+      }
 
       ConfirmationCompletedHandler completedHandler = confirmation.getCompletedHandler();
 
@@ -273,7 +307,15 @@ public abstract class Communicator {
         errorCode,
         errorDescription);
     try {
-      radio.send(makeCallError(uniqueId, action, errorCode, errorDescription));
+      // radio.send(makeCallError(uniqueId, action, errorCode, errorDescription));
+      if (action == null) {
+        action = events.getAction(uniqueId);
+      }
+      Object callError = makeCallError(uniqueId, action, errorCode, errorDescription);
+      radio.send(callError);
+      if (transportListener != null) {
+        transportListener.rawMessageSent(sessionInformation, action, callError.toString());
+      }
     } catch (NotConnectedException ex) {
       logger.warn("sendCallError() failed", ex);
       events.onError(
@@ -302,7 +344,15 @@ public abstract class Communicator {
         errorCode,
         errorDescription);
     try {
-      radio.send(makeCallResultError(uniqueId, action, errorCode, errorDescription));
+      // radio.send(makeCallResultError(uniqueId, action, errorCode, errorDescription));
+      if (action == null) {
+        action = events.getAction(uniqueId);
+      }
+      Object callError = makeCallResultError(uniqueId, action, errorCode, errorDescription);
+      radio.send(callError);
+      if (transportListener != null) {
+        transportListener.rawMessageSent(sessionInformation, action, callError.toString());
+      }
     } catch (NotConnectedException ex) {
       logger.warn("sendCallResultError() failed", ex);
       events.onError(
@@ -391,6 +441,11 @@ public abstract class Communicator {
       } else if (message instanceof SendMessage) {
         SendMessage send = (SendMessage) message;
         events.onSend(send.getId(), send.getAction(), send.getPayload());
+      }
+
+      if (transportListener != null) {
+        String action = events.getAction(message.getId());
+        transportListener.rawMessageReceived(sessionInformation, action, input.toString());
       }
     }
 

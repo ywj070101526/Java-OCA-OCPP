@@ -361,6 +361,11 @@ public class Session implements ISession {
       events.handleConnectionOpened();
     }
 
+    @Override
+    public String getAction(String id) {
+      return events.getAction(id);
+    }
+
     private boolean isLegacyRPC() {
       ProtocolVersion protocolVersion = featureRepository.getProtocolVersion();
       return protocolVersion == null || protocolVersion.equals(OCPP1_6);

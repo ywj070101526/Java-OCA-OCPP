@@ -84,7 +84,7 @@ public class ServerTest {
         .when(serverEvents)
         .newSession(any(), any());
 
-    when(promiseRepository.createPromise(any()))
+    when(promiseRepository.createPromise(any(), ""))
         .then(invocation -> new CompletableFuture<Confirmation>());
     when(featureRepository.findFeature(any())).thenReturn(Optional.of(feature));
     when(feature.getConfirmationType()).thenAnswer(invocation -> Confirmation.class);
@@ -164,7 +164,7 @@ public class ServerTest {
     server.open(LOCALHOST, PORT, serverEvents);
     listenerEvents.newSession(session, information);
     CompletableFuture<Confirmation> internalFuture = new CompletableFuture<>();
-    when(promiseRepository.createPromise(any())).thenReturn(internalFuture);
+    when(promiseRepository.createPromise(any(), "")).thenReturn(internalFuture);
 
     // When
     CompletableFuture<Confirmation> returnedFuture = server.send(sessionIndex, request);
@@ -185,7 +185,7 @@ public class ServerTest {
     server.open(LOCALHOST, PORT, serverEvents);
     listenerEvents.newSession(session, information);
     CompletableFuture<Confirmation> internalFuture = new CompletableFuture<>();
-    when(promiseRepository.createPromise(any())).thenReturn(internalFuture);
+    when(promiseRepository.createPromise(any(), "")).thenReturn(internalFuture);
 
     // When
     CompletableFuture<Confirmation> returnedFuture = server.send(sessionIndex, request);
@@ -208,7 +208,7 @@ public class ServerTest {
     server.open(LOCALHOST, PORT, serverEvents);
     listenerEvents.newSession(session, information);
     CompletableFuture<Confirmation> internalFuture = new CompletableFuture<>();
-    when(promiseRepository.createPromise(any())).thenReturn(internalFuture);
+    when(promiseRepository.createPromise(any(), "")).thenReturn(internalFuture);
 
     // When
     CompletableFuture<Confirmation> returnedFuture = server.send(sessionIndex, request);

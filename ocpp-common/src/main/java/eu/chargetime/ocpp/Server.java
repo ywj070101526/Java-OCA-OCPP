@@ -189,6 +189,11 @@ public class Server {
 
                   @Override
                   public void handleConnectionOpened() {}
+
+                  @Override
+                  public String getAction(String uniqueId) {
+                    return promiseRepository.getAction(uniqueId);
+                  }
                 });
 
             sessions.put(session.getSessionId(), session);
@@ -250,7 +255,8 @@ public class Server {
     }
 
     String requestUuid = session.storeRequest(request);
-    CompletableFuture<Confirmation> promise = promiseRepository.createPromise(requestUuid);
+    String action = featureOptional.get().getAction();
+    CompletableFuture<Confirmation> promise = promiseRepository.createPromise(requestUuid, action);
 
     // Clean up after the promise has completed, no matter if it was successful or had an error or a
     // timeout.

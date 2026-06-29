@@ -68,7 +68,7 @@ public class ClientTest {
         .when(session)
         .open(any(), any());
 
-    when(promiseRepository.createPromise(any()))
+    when(promiseRepository.createPromise(any(), ""))
         .then(invocation -> new CompletableFuture<Confirmation>());
     when(featureRepository.findFeature(any())).thenReturn(Optional.of(feature));
     when(feature.getConfirmationType()).thenAnswer(invocation -> Confirmation.class);
@@ -179,7 +179,7 @@ public class ClientTest {
   public void send_aMessage_promiseCompletes() throws Exception {
     // Given
     CompletableFuture<Confirmation> internalFuture = new CompletableFuture<>();
-    when(promiseRepository.createPromise(any())).thenReturn(internalFuture);
+    when(promiseRepository.createPromise(any(), "")).thenReturn(internalFuture);
 
     // When
     CompletableFuture<Confirmation> returnedFuture = client.send(request);
@@ -198,7 +198,7 @@ public class ClientTest {
   public void send_aMessage_promiseCompletesExceptionally() throws Exception {
     // Given
     CompletableFuture<Confirmation> internalFuture = new CompletableFuture<>();
-    when(promiseRepository.createPromise(any())).thenReturn(internalFuture);
+    when(promiseRepository.createPromise(any(), "")).thenReturn(internalFuture);
 
     // When
     CompletableFuture<Confirmation> returnedFuture = client.send(request);
@@ -219,7 +219,7 @@ public class ClientTest {
   public void send_aMessage_promiseCompletesWithTimeout() throws Exception {
     // Given
     CompletableFuture<Confirmation> internalFuture = new CompletableFuture<>();
-    when(promiseRepository.createPromise(any())).thenReturn(internalFuture);
+    when(promiseRepository.createPromise(any(), "")).thenReturn(internalFuture);
 
     // When
     CompletableFuture<Confirmation> returnedFuture = client.send(request);
